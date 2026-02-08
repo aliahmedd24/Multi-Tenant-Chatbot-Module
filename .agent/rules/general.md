@@ -2,225 +2,326 @@
 trigger: always_on
 ---
 
-# Wafaa AI Concierge - Rules
+# AI Agent Development Rules for Wafaa AI Concierge
 
-## Architecture (6 Layers)
-1. **CLIENT**: Multi-tenant (Tenant A/B/C) via Web/Mobile/Teams
-2. **INGRESS**: API Gateway (rate limit, SSL, routing) + Auth (OAuth 2.0, tenant ID)
-3. **APPLICATION**: Chat Orchestrator (session, context, intent) + Tenant Config + Message Queue (Kafka)
-4. **AI/ML**: LLM Gateway (GPT-4/Claude/Llama) + RAG Engine (vector search) + NLU Service
-5. **DATA**: Conversation DB (PostgreSQL) + Vector Store (Pinecone/Weaviate) + Knowledge Base + Cache (Redis)
-6. **ISOLATION**: Row-level security, namespace partition, encryption at rest
+## Project Context
 
-## Tech Stack
-- **Backend**: Python 3.11+, FastAPI
-- **DB**: PostgreSQL 15+ (multi-tenant RLS), Pinecone/Weaviate (vectors), Redis 7+ (cache)
-- **AI**: GPT-4o/Claude 3.5/Llama 3, text-embedding-ada-002
-- **Channels**: Meta Business API (WhatsApp/Instagram), TikTok/Snapchat APIs
+You are working on **Wafaa AI Concierge**, a multi-tenant B2B SaaS platform that enables brands and restaurants to deploy AI-powered customer service chatbots across social media channels (WhatsApp, Instagram, TikTok, Snapchat). The system uses Retrieval-Augmented Generation (RAG) to provide accurate, contextual responses based on each client's specific knowledge base while maintaining complete data isolation.
 
-## Structure
-```
-backend/
-├── app/
-│   ├── api/v1/endpoints/  # clients, webhooks, chat, knowledge, admin
-│   ├── core/              # config, security, multi_tenant
-│   ├── models/            # client, conversation, knowledge_base, channel_config
-│   ├── services/
-│   │   ├── orchestrator/  # chat_orchestrator, session_manager, intent_router
-│   │   ├── ai/            # llm_gateway, rag_engine, prompt_manager, nlu_service
-│   │   ├── channels/      # base, whatsapp, instagram, tiktok, snapchat
-│   │   ├── knowledge/     # indexer, retriever, embedder
-│   │   └── queue/         # producer, consumer
-│   ├── schemas/           # Pydantic models
-│   └── utils/             # tenant_context, validators
-├── tests/
-└── main.py
-```
+**Critical Architecture Principle**: Every feature must respect tenant isolation - no tenant should ever access another tenant's data.
 
-## Multi-Tenancy Rules
+## Mandatory Logging Requirements
 
-### Database Schema
-```sql
-CREATE TABLE clients (
-    id UUID PRIMARY KEY,
-    name VARCHAR(255),
-    slug VARCHAR(100) UNIQUE,
-    is_active BOOLEAN DEFAULT TRUE
-);
+### Session Logging Protocol
 
-CREATE TABLE knowledge_documents (
-    id UUID PRIMARY KEY,
-    client_id UUID REFERENCES clients(id) ON DELETE CASCADE,
-    content TEXT,
-    metadata JSONB,
-    vector_id VARCHAR(255)
-);
+You **MUST** maintain a `LOG.md` file in the project root directory. Update this file at the **END of EVERY coding session** with the following structure:
 
-ALTER TABLE knowledge_documents ENABLE ROW LEVEL SECURITY;
-CREATE POLICY tenant_isolation ON knowledge_documents
-    USING (client_id = current_setting('app.current_tenant_id')::UUID);
-```
+```markdown
+## Session [YYYY-MM-DD HH:MM] - [Phase X: Feature Name]
 
-### Tenant Context
-```python
-from contextvars import ContextVar
-current_tenant_id: ContextVar[Optional[UUID]] = ContextVar('current_tenant_id', default=None)
+### Objective
+[What was the goal of this session?]
 
-class TenantContext:
-    @staticmethod
-    def set_tenant(tenant_id: UUID): current_tenant_id.set(tenant_id)
-    @staticmethod
-    def get_tenant() -> Optional[UUID]: return current_tenant_id.get()
-```
+### Work Completed
+- [ ] Task 1 description
+- [ ] Task 2 description
+- [ ] Task 3 description
 
-## RAG Implementation
+### Code Changes
+- **Files Modified**: `path/to/file1.py`, `path/to/file2.ts`
+- **Files Created**: `path/to/newfile.py`
+- **Files Deleted**: `path/to/oldfile.py`
 
-### Retrieval Pipeline
-```python
-async def retrieve_context(query: str, client_id: UUID, top_k: int = 5):
-    # 1. Generate embedding
-    query_embedding = await embedder.embed(query)
-    # 2. Vector search with client filter
-    results = await vector_store.similarity_search(
-        embedding=query_embedding,
-        filter={"client_id": str(client_id)},
-        namespace=str(client_id),
-        top_k=top_k
-    )
-    return results
-```
+### Tests Added/Modified
+- [ ] Test file: `tests/test_feature.py` - Test description
+- [ ] Coverage: X% for module Y
 
-### Prompt Template
-```python
-PROMPT = """You are AI for {client_name}.
-RULES:
-1. ONLY use provided context
-2. No context? Say "I don't have that info"
-3. Never invent offers/prices
-4. Use {tone} tone
-5. Stay on topic
+### Issues Encountered
+1. **Issue**: Description of problem
+   - **Solution**: How it was resolved
+   - **Decision**: Why this approach was chosen
 
-CONTEXT: {knowledge_context}
-QUERY: {user_query}"""
-```
+### Next Steps
+1. [ ] Next task to complete
+2. [ ] Technical debt to address
+3. [ ] Dependencies to resolve
 
-## Channel Integration
-
-### Webhook Pattern
-```python
-@router.post("/webhook/whatsapp/{client_slug}")
-async def whatsapp_webhook(client_slug: str, request: Request):
-    # 1. Verify signature
-    if not verify_signature(request): raise HTTPException(403)
-    # 2. Parse payload
-    payload = await request.json()
-    # 3. Get client & set context
-    client = await get_client_by_slug(client_slug)
-    TenantContext.set_tenant(client.id)
-    # 4. Process message
-    response = await orchestrator.process_message(...)
-    # 5. Send response
-    await send_whatsapp_message(...)
-    return {"status": "ok"}
-```
-
-## Security Checklist
-- ✓ All endpoints require auth
-- ✓ Tenant ID from verified token, not request
-- ✓ DB queries filtered by tenant_id
-- ✓ File uploads validated
-- ✓ Rate limiting per tenant
-- ✓ Webhook signatures verified
-- ✓ Secrets in env vars
-- ✓ HTTPS in production
-- ✓ Use ORM (prevent SQL injection)
-
-## Coding Standards
-- Type hints on all functions
-- Async/await for I/O
-- Pydantic for validation
-- Google-style docstrings
-- Black (100 char lines)
-- pytest (80% coverage min)
-
-## DO ✅
-- Validate tenant_id before DB ops
-- Use async/await consistently
-- Implement circuit breakers
-- Cache expensive operations
-- Log with tenant_id
-- Use dependency injection
-
-## DON'T ❌
-- Trust client-provided tenant_id
-- Mix sync/async incorrectly
-- Hardcode business logic in routes
-- Return raw exceptions
-- Skip input validation
-- Use global state for tenant data
-
-## Common Patterns
-
-### Tenant-Safe Query
-```python
-async def get_documents(client_id: UUID):
-    current = TenantContext.get_tenant()
-    assert current == client_id, "Tenant mismatch"
-    return await db.query(Doc).filter(Doc.client_id == client_id).all()
-```
-
-### RAG Generation
-```python
-async def generate_response(query: str, client_id: UUID):
-    # 1. Retrieve context
-    docs = await retrieve_context(query, client_id, top_k=5)
-    # 2. Build prompt
-    prompt = build_prompt(query, docs, client_id)
-    # 3. Generate
-    response = await llm_generate(prompt, client_id)
-    return response
-```
-
-### Document Indexing
-```python
-async def index_document(file_path: str, client_id: UUID):
-    # 1. Parse & chunk
-    chunks = await chunk_text(parse_file(file_path))
-    # 2. Embed
-    embeddings = await embedder.embed_batch([c.text for c in chunks])
-    # 3. Upsert to vector DB (with namespace)
-    await vector_store.upsert(embeddings, namespace=str(client_id))
-```
-
-## Environment Variables
-```bash
-DATABASE_URL=postgresql+asyncpg://user:pass@host/db
-REDIS_URL=redis://localhost:6379
-VECTOR_DB_PROVIDER=pinecone
-PINECONE_API_KEY=xxx
-OPENAI_API_KEY=sk-xxx
-ANTHROPIC_API_KEY=sk-ant-xxx
-META_APP_ID=xxx
-META_APP_SECRET=xxx
-JWT_SECRET_KEY=xxx
-```
-
-## Performance
-- Session cache (Redis, 1hr TTL)
-- Response cache (30min TTL)
-- Batch vector operations
-- DB connection pooling (20 size, 10 overflow)
-- Async processing for non-critical ops
-
-## Monitoring
-```python
-logger.info("message_processed", 
-    client_id=client_id, 
-    channel="whatsapp",
-    response_time_ms=125)
-```
-
-Track: messages/tenant, response time, token usage, vector latency, cache hit rate, errors/tenant
+### Notes
+- Important observations
+- Performance considerations
+- Security concerns addressed
 
 ---
-v1.0 | 2026-02-06
+```
+
+### When to Update LOG.md
+- After completing a feature or sub-feature
+- Before switching to a different phase/module
+- At the end of each coding session
+- When encountering and resolving significant issues
+- When making architecture decisions
+
+### Log File Location
+- **Path**: `/LOG.md` (project root)
+- **Format**: Markdown with clear session dividers
+- **Retention**: Keep entire project history (do not delete old entries)
+
+## Project Scope Boundaries
+
+### ✅ IN SCOPE - You Should Work On:
+
+1. **Phase 0-5 Implementation**
+   - Follow PRD documents exactly as specified
+   - Implement features in phase order (0→1→2→3→4→5)
+   - Complete all "Definition of Done" criteria before marking phase complete
+
+2. **Core Platform Features**
+   - Multi-tenant database architecture with tenant_id isolation
+   - JWT authentication and authorization
+   - Knowledge base management (upload, process, embed)
+   - RAG pipeline (vector search + LLM generation)
+   - Channel integrations (WhatsApp, Instagram)
+   - Admin dashboard with React/TypeScript
+   - Message processing and conversation management
+   - Human agent handoff
+   - Analytics and reporting
+
+3. **Code Quality Requirements**
+   - Write comprehensive unit and integration tests
+   - Follow type hints (Python) and strict types (TypeScript)
+   - Implement proper error handling
+   - Add docstrings and code comments
+   - Follow security best practices
+
+4. **Infrastructure Setup**
+   - Docker Compose configurations
+   - Database migrations with Alembic
+   - Celery worker setup
+   - Redis caching implementation
+   - CI/CD pipeline configuration
+
+### ❌ OUT OF SCOPE - Do Not Implement:
+
+1. **Features Not in PRDs**
+   - Do NOT add features beyond Phase 0-5 specifications
+   - Do NOT implement Phase 6+ features unless explicitly requested
+   - Do NOT add "nice-to-have" features without approval
+
+2. **Alternative Architectures**
+   - Do NOT change core architecture decisions (e.g., switching from FastAPI to Flask)
+   - Do NOT replace specified tech stack without explicit permission
+   - Do NOT implement microservices pattern (keep monolith as designed)
+
+3. **Third-Party Integrations Not Specified**
+   - Do NOT add channels beyond WhatsApp/Instagram in Phase 3
+   - Do NOT integrate payment systems (out of scope)
+   - Do NOT add social login providers not mentioned in PRDs
+
+4. **Advanced AI Features Before Phase 5**
+   - Do NOT implement voice recognition in early phases
+   - Do NOT add image recognition until explicitly requested
+   - Do NOT build custom ML models (use specified APIs)
+
+5. **Enterprise Features Not Specified**
+   - Do NOT implement SSO/SAML without explicit request
+   - Do NOT add multi-language support beyond configuration
+   - Do NOT build white-label features prematurely
+
+## Development Guidelines
+
+### Code Organization
+
+1. **Follow Directory Structure** from PRDs exactly
+2. **Naming Conventions**:
+   - Python: `snake_case` for functions/variables, `PascalCase` for classes
+   - TypeScript: `camelCase` for functions/variables, `PascalCase` for components
+   - Files: `kebab-case.ts` or `snake_case.py`
+
+3. **Module Organization**:
+   - Keep related code together (models, schemas, services)
+   - One class/major function per file (except utilities)
+   - Clear separation of concerns (API, business logic, data access)
+
+### Data Isolation Rules
+
+**CRITICAL**: Every database query and vector search **MUST** filter by `tenant_id`. This is non-negotiable.
+
+```python
+# ✅ CORRECT - Always filter by tenant_id
+conversations = db.query(Conversation).filter(
+    Conversation.tenant_id == current_user.tenant_id
+).all()
+
+# ❌ WRONG - Never query without tenant filter
+conversations = db.query(Conversation).all()  # NEVER DO THIS
+```
+
+### Security Checklist
+
+Before marking any feature complete, verify:
+- [ ] All database queries filter by tenant_id
+- [ ] Authentication required on protected endpoints
+- [ ] Input validation on all user inputs
+- [ ] No secrets in code or logs
+- [ ] SQL injection prevented (use parameterized queries)
+- [ ] XSS prevented (sanitize user content)
+- [ ] CSRF tokens on state-changing requests
+- [ ] Rate limiting implemented on public endpoints
+
+### Testing Requirements
+
+Minimum test coverage by module:
+- **Authentication**: 95%+ (critical path)
+- **RAG Engine**: 90%+ (core functionality)
+- **Message Routing**: 90%+ (business critical)
+- **API Endpoints**: 85%+
+- **UI Components**: 80%+
+
+### Error Handling Standards
+
+```python
+# ✅ CORRECT - Structured error handling
+try:
+    result = some_operation()
+except SpecificException as e:
+    logger.error(f"Operation failed: {e}", extra={"tenant_id": tenant_id})
+    raise HTTPException(status_code=500, detail="Operation failed")
+
+# ❌ WRONG - Bare except or exposing internal details
+try:
+    result = some_operation()
+except:  # Too broad
+    return {"error": str(e)}  # Exposes internal details
+```
+
+### Performance Considerations
+
+Always implement:
+1. **Database Indexes**: On tenant_id, timestamps, foreign keys
+2. **Query Optimization**: Use pagination, limit results
+3. **Caching**: Cache frequently accessed data (Redis)
+4. **Async Operations**: Use async/await for I/O operations
+5. **Connection Pooling**: Configure appropriate pool sizes
+
+## Communication Protocol
+
+### When to Ask for Clarification
+
+**ASK** when:
+- Requirements in PRD are ambiguous or conflicting
+- Security implications are unclear
+- Performance trade-offs need business decision
+- Architecture changes would impact multiple phases
+- Third-party API limits or costs are concerning
+
+**DO NOT ASK** for:
+- Formatting preferences (follow PRD)
+- Variable naming (use conventions above)
+- File organization (follow directory structure)
+- Testing approaches (follow coverage requirements)
+
+### Progress Reporting Format
+
+When providing updates:
+```markdown
+## Progress Update: [Feature Name]
+
+**Status**: [In Progress / Completed / Blocked]
+
+**Completed**:
+- [x] Subtask 1
+- [x] Subtask 2
+
+**In Progress**:
+- [ ] Subtask 3 (70% done)
+
+**Blocked**:
+- [ ] Subtask 4 - Waiting for: [reason]
+
+**Next Steps**:
+1. Complete subtask 3
+2. Begin subtask 5
+
+**Estimated Completion**: [Date]
+```
+
+## Phase Transition Protocol
+
+Before moving to next phase:
+
+1. **Complete Definition of Done**
+   - Review checklist in phase PRD
+   - Verify all tests pass
+   - Run security checks
+
+2. **Update LOG.md**
+   - Summarize phase completion
+   - Document any deviations from PRD
+   - List technical debt
+
+3. **Create Phase Summary**
+   - Lines of code added
+   - Test coverage achieved
+   - Performance benchmarks met
+   - Known issues/limitations
+
+4. **Request Phase Review**
+   - Present summary
+   - Highlight critical decisions
+   - Propose next phase start
+
+## Quick Reference
+
+### Essential Files to Always Check
+1. **master_prd_index.md** - Project overview
+2. **phase[N]_*_prd.md** - Current phase specifications
+3. **LOG.md** - Project history and decisions
+4. **ARCHITECTURE.md** - System design (when created)
+5. **.env.example** - Required environment variables
+
+### Tech Stack by Layer
+- **API**: FastAPI (Python 3.11+)
+- **Database**: PostgreSQL 15+ with SQLAlchemy
+- **Cache**: Redis 7
+- **Queue**: Celery + Redis Streams
+- **Vector DB**: Pinecone or Weaviate
+- **LLM**: OpenAI GPT-4o / Anthropic Claude 3.5 Sonnet
+- **Frontend**: React 18 + TypeScript + Tailwind CSS
+- **Container**: Docker + Docker Compose
+
+### Key Commands
+```bash
+# Start all services
+docker-compose up -d
+
+# Run migrations
+docker-compose run --rm backend alembic upgrade head
+
+# Run tests
+docker-compose run --rm backend pytest
+
+# Check logs
+docker-compose logs -f backend
+
+# Stop services
+docker-compose down
+```
+
+## Enforcement
+
+These rules are **mandatory**. Non-compliance includes:
+- Not updating LOG.md after sessions
+- Implementing out-of-scope features
+- Skipping tests
+- Violating data isolation principles
+- Ignoring security checklist
+
+If you encounter situations where these rules conflict with project needs, **document the conflict in LOG.md** and seek clarification before proceeding.
+
+---
+
+**Remember**: Quality over speed. Complete each phase properly before moving forward. The multi-tenant architecture requires rigorous attention to data isolation - shortcuts here can cause catastrophic security breaches.
+
+**Current Phase**: Phase 0 (setup) unless explicitly told otherwise.
+
+**Log File Status**: Create LOG.md in project root on first commit if it doesn't exist.
