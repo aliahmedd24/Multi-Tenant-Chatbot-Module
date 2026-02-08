@@ -1,0 +1,12 @@
+# Prometheus configuration for Wafaa Platform
+# Disabled in Phase 0 - enabled in Phase 5
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'wafaa-backend'
+    static_configs:
+      - targets: ['backend:8000']
+    metrics_path: /metrics
