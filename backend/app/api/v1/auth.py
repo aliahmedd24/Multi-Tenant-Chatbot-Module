@@ -104,6 +104,18 @@ def refresh_token(body: RefreshRequest, db: Session = Depends(get_db)):
     )
 
 
+@router.get("/me")
+def get_current_user_info(current_user: User = Depends(get_current_user)):
+    """Get current authenticated user information."""
+    return {
+        "id": str(current_user.id),
+        "email": current_user.email,
+        "full_name": current_user.full_name,
+        "role": current_user.role,
+        "tenant_id": str(current_user.tenant_id),
+    }
+
+
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 def logout(token: str = Depends(oauth2_scheme)):
     """Invalidate the current access token."""

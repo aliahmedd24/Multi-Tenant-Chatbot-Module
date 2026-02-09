@@ -1,23 +1,66 @@
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { Sidebar } from './components/Sidebar';
+import { LoginPage } from './pages/LoginPage';
+import { DashboardPage } from './pages/DashboardPage';
+import { ChannelsPage } from './pages/ChannelsPage';
+import { KnowledgePage } from './pages/KnowledgePage';
+import { ConversationsPage } from './pages/ConversationsPage';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30000,
+      retry: 1,
+    },
+  },
+});
+
+// Protected route wrapper
+function ProtectedRoute() {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-600" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-50">
+      <Sidebar />
+      <main className="lg:ml-64 p-6 lg:p-8">
+        <Outlet />
+      </main>
+    </div>
+  );
+}
+
 function App() {
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">
-          Wafaa Admin Dashboard
-        </h1>
-        <p className="text-lg text-gray-600 mb-8">
-          Multi-tenant AI Concierge Platform
-        </p>
-        <div className="bg-white rounded-lg shadow-md p-6 max-w-md mx-auto">
-          <p className="text-sm text-gray-500">
-            Phase 0: Project Setup Complete
-          </p>
-          <p className="text-sm text-gray-400 mt-2">
-            Dashboard UI will be built in Phase 4
-          </p>
-        </div>
-      </div>
-    </div>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route element={<ProtectedRoute />}>
+              <Route path="/" element={<DashboardPage />} />
+              <Route path="/conversations" element={<ConversationsPage />} />
+              <Route path="/channels" element={<ChannelsPage />} />
+              <Route path="/knowledge" element={<KnowledgePage />} />
+            </Route>
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }
 
