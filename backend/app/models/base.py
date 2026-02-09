@@ -3,8 +3,29 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, String
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Column, DateTime, ForeignKey, String, TypeDecorator
+
+
+class GUID(TypeDecorator):
+    """Platform-independent UUID type.
+
+    Uses String(36) as the underlying storage, so it works with both
+    PostgreSQL and SQLite (for tests).
+    """
+
+    impl = String(36)
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        if value is not None:
+            return str(value)
+        return value
+
+    def process_result_value(self, value, dialect):
+        if value is not None:
+            if not isinstance(value, uuid.UUID):
+                return uuid.UUID(value)
+        return value
 
 
 class TimestampMixin:
@@ -23,7 +44,11 @@ class TenantModel(TimestampMixin):
     to ensure tenant_id is always present and indexed.
     """
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4)
     tenant_id = Column(
-        String(36), nullable=False, index=True, doc="Tenant identifier for data isolation"
+        GUID(),
+        ForeignKey("tenants.id"),
+        nullable=False,
+        index=True,
+        doc="Tenant identifier for data isolation",
     )

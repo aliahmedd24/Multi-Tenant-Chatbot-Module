@@ -39,10 +39,23 @@ class Settings(BaseSettings):
     max_file_size_mb: int = 10
     allowed_file_types: str = "pdf,docx,txt,csv"
 
-    # AI/ML
+    # AI/ML Providers
     llm_provider: str = "mock"
+    llm_model: str = "gpt-4o"
     embedding_provider: str = "mock"
+    embedding_model: str = "text-embedding-3-small"
     vector_db_provider: str = "mock"
+
+    # API Keys
+    openai_api_key: str = ""
+    pinecone_api_key: str = ""
+    pinecone_index_name: str = "wafaa-knowledge"
+
+    # RAG Settings
+    chunk_size: int = 400
+    chunk_overlap: int = 50
+    max_context_chunks: int = 5
+    max_files_per_tenant: int = 20
 
     # Monitoring
     sentry_dsn: str = ""
