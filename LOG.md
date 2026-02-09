@@ -2,6 +2,68 @@
 
 ---
 
+## Session 2026-02-09 03:51 - Phase 3: Channel Integrations (WhatsApp & Instagram)
+
+### Objective
+Implement webhook integrations for WhatsApp Business API and Instagram Messaging to receive and respond to customer messages via RAG-powered chat.
+
+### Work Completed
+- [x] Created `Channel` model (tenant_id, type, credentials, webhook_secret, is_active)
+- [x] Created `Conversation` model (tenant_id, channel_id, customer_identifier, status)
+- [x] Created `Message` model (direction, content, status, external_id)
+- [x] Created `schemas/channel.py` - Pydantic schemas for channel CRUD
+- [x] Created `services/whatsapp.py` - WhatsApp Cloud API client with HMAC signature verification
+- [x] Created `services/instagram.py` - Instagram Graph API client with HMAC signature verification
+- [x] Created `api/v1/webhooks/whatsapp.py` - Webhook verification + message receive
+- [x] Created `api/v1/webhooks/instagram.py` - Webhook verification + message receive
+- [x] Created `api/v1/channels.py` - Channel CRUD endpoints with tenant isolation
+- [x] Created `workers/message_tasks.py` - Celery task for RAG processing + response delivery
+- [x] Updated `api/v1/router.py` - Registered channels and webhook routes
+- [x] Created `alembic/versions/002_channels.py` - Migration for new tables
+- [x] Updated `config.py` - Added webhook_verify_token, whatsapp_api_version, instagram_api_version
+- [x] Wrote 26 new tests across 3 test files
+
+### Code Changes
+- **Files Modified**:
+  - `backend/app/models/__init__.py` - Added Channel, Conversation, Message imports
+  - `backend/app/config.py` - Added channel webhook settings
+  - `backend/app/api/v1/router.py` - Registered channels and webhook routers
+- **Files Created**:
+  - `backend/app/models/channel.py` - Channel model
+  - `backend/app/models/conversation.py` - Conversation model
+  - `backend/app/models/message.py` - Message model
+  - `backend/app/schemas/channel.py` - Channel/Conversation/Message schemas
+  - `backend/app/services/whatsapp.py` - WhatsApp API client
+  - `backend/app/services/instagram.py` - Instagram API client
+  - `backend/app/api/v1/channels.py` - Channel CRUD endpoints
+  - `backend/app/api/v1/webhooks/__init__.py` - Webhooks package
+  - `backend/app/api/v1/webhooks/whatsapp.py` - WhatsApp webhook
+  - `backend/app/api/v1/webhooks/instagram.py` - Instagram webhook
+  - `backend/app/workers/message_tasks.py` - Message processing task
+  - `backend/alembic/versions/002_channels.py` - Migration
+  - `backend/tests/test_whatsapp_webhook.py` - 11 tests
+  - `backend/tests/test_instagram_webhook.py` - 6 tests
+  - `backend/tests/test_channels_api.py` - 9 tests
+
+### Tests Added/Modified
+- `backend/tests/test_whatsapp_webhook.py` - 11 tests: verification, signature, payload parsing
+- `backend/tests/test_instagram_webhook.py` - 6 tests: verification, signature, payload parsing
+- `backend/tests/test_channels_api.py` - 9 tests: CRUD, tenant isolation
+- **Results**: 104 passed, 2 skipped, 419 warnings in 35.14s
+
+### Next Steps
+1. [ ] Configure Meta Developer App for WhatsApp/Instagram webhooks
+2. [ ] Deploy to staging and test with real messages
+3. [ ] Begin Phase 4: Analytics & Dashboard
+
+### Notes
+- Webhook endpoints are PUBLIC (no JWT) but protected by HMAC-SHA256 signature verification
+- Tenant isolation: channels → conversations → messages all scoped by tenant_id
+- Rate limiting deferred to future iteration
+- All 104 tests pass with comprehensive coverage
+
+---
+
 ## Session 2026-02-09 01:34 - Phase 2: Knowledge Base & RAG Pipeline
 
 ### Objective
@@ -53,7 +115,7 @@ Implement complete knowledge management system with file upload, text processing
    - **Decision**: Generate doc_id first, save file, then create DB record with file_path
 
 ### Next Steps
-1. [ ] Generate Alembic migration for knowledge_documents, knowledge_chunks tables
+1. [x] Generate Alembic migration for knowledge_documents, knowledge_chunks tables
 2. [ ] Run full system with Docker Compose to verify end-to-end
 3. [ ] Begin Phase 3: Channel Integrations (WhatsApp, Instagram)
 

@@ -61,6 +61,11 @@ class Settings(BaseSettings):
     sentry_dsn: str = ""
     prometheus_enabled: bool = False
 
+    # Channel Webhooks
+    webhook_verify_token: str = "wafaa-verify-token"
+    whatsapp_api_version: str = "v18.0"
+    instagram_api_version: str = "v18.0"
+
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 
 
