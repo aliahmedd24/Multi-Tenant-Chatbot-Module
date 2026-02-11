@@ -72,6 +72,7 @@ export interface ChannelPerformance {
 export interface Conversation {
     id: string;
     channel_id: string;
+    channel_name?: string;
     customer_identifier: string;
     customer_name?: string;
     status: 'active' | 'closed' | 'handoff';
@@ -88,6 +89,10 @@ export interface Message {
     content_type: string;
     status: string;
     created_at: string;
+}
+
+export interface ConversationDetail extends Conversation {
+    messages: Message[];
 }
 
 export interface KnowledgeDocument {

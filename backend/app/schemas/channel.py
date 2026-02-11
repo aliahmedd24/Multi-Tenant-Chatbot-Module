@@ -89,6 +89,7 @@ class ConversationResponse(BaseModel):
 
     id: uuid.UUID
     channel_id: uuid.UUID
+    channel_name: Optional[str] = None
     customer_identifier: str
     customer_name: Optional[str] = None
     status: str
@@ -106,6 +107,23 @@ class ConversationListResponse(BaseModel):
     total: int
     page: int
     page_size: int
+
+
+class ConversationDetailResponse(BaseModel):
+    """Conversation with full message thread."""
+
+    id: uuid.UUID
+    channel_id: uuid.UUID
+    channel_name: Optional[str] = None
+    customer_identifier: str
+    customer_name: Optional[str] = None
+    status: str
+    last_message_at: datetime
+    message_count: int = 0
+    created_at: datetime
+    messages: list["MessageResponse"] = Field(default_factory=list)
+
+    model_config = {"from_attributes": True}
 
 
 # -----------------------------------------------------------------------------

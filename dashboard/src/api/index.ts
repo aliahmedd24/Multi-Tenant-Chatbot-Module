@@ -7,6 +7,7 @@ import type {
     ChannelPerformance,
     Channel,
     Conversation,
+    ConversationDetail,
     KnowledgeDocument,
     ChatResponse,
     SentimentAnalytics,
@@ -50,6 +51,21 @@ export const analyticsApi = {
 
     getChannelPerformance: async (): Promise<ChannelPerformance> => {
         const response = await api.get('/analytics/channels');
+        return response.data;
+    },
+};
+
+// Conversations API (channel + in-app chat)
+export const conversationsApi = {
+    list: async (page = 1, pageSize = 20): Promise<{ conversations: Conversation[]; total: number; page: number; page_size: number }> => {
+        const response = await api.get('/conversations', {
+            params: { page, page_size: pageSize },
+        });
+        return response.data;
+    },
+
+    get: async (id: string): Promise<ConversationDetail> => {
+        const response = await api.get(`/conversations/${id}`);
         return response.data;
     },
 };

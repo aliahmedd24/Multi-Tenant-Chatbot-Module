@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Send, Bot, User, Loader2 } from 'lucide-react';
 import { chatApi } from '../api';
 import type { ChatSourceDocument } from '../types';
@@ -15,6 +16,7 @@ interface ChatMessage {
 }
 
 export function ChatPage() {
+    const queryClient = useQueryClient();
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -55,6 +57,8 @@ export function ChatPage() {
                 timestamp: new Date(),
             };
             setMessages((prev) => [...prev, assistantMessage]);
+            queryClient.invalidateQueries({ queryKey: ['analytics'] });
+            queryClient.invalidateQueries({ queryKey: ['conversations'] });
         } catch (err) {
             const detail =
                 err && typeof err === 'object' && 'response' in err

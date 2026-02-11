@@ -8,6 +8,7 @@ import { ChannelsPage } from './pages/ChannelsPage';
 import { KnowledgePage } from './pages/KnowledgePage';
 import { ChatPage } from './pages/ChatPage';
 import { ConversationsPage } from './pages/ConversationsPage';
+import { ConversationDetailPage } from './pages/ConversationDetailPage';
 import { AgentAnalyticsPage } from './pages/AgentAnalyticsPage';
 
 const queryClient = new QueryClient({
@@ -57,6 +58,7 @@ function App() {
               <Route path="/chat" element={<ChatPage />} />
               <Route path="/agent-analytics" element={<AgentAnalyticsPage />} />
               <Route path="/conversations" element={<ConversationsPage />} />
+              <Route path="/conversations/:id" element={<ConversationDetailPage />} />
               <Route path="/channels" element={<ChannelsPage />} />
               <Route path="/knowledge" element={<KnowledgePage />} />
             </Route>
