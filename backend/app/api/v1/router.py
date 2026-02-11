@@ -2,6 +2,7 @@
 
 from fastapi import APIRouter
 
+from app.api.v1.agent_analytics import router as agent_analytics_router
 from app.api.v1.analytics import router as analytics_router
 from app.api.v1.auth import router as auth_router
 from app.api.v1.channels import router as channels_router
@@ -21,6 +22,9 @@ api_router.include_router(knowledge_router, prefix="/knowledge", tags=["knowledg
 api_router.include_router(chat_router, prefix="/chat", tags=["chat"])
 api_router.include_router(channels_router, prefix="/channels", tags=["channels"])
 api_router.include_router(analytics_router, prefix="/analytics", tags=["analytics"])
+api_router.include_router(
+    agent_analytics_router, prefix="/analytics/agent", tags=["agent-analytics"]
+)
 
 # Webhook routes (public, no auth - protected by signature verification)
 api_router.include_router(

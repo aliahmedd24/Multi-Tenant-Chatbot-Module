@@ -7,6 +7,7 @@ import { DashboardPage } from './pages/DashboardPage';
 import { ChannelsPage } from './pages/ChannelsPage';
 import { KnowledgePage } from './pages/KnowledgePage';
 import { ConversationsPage } from './pages/ConversationsPage';
+import { AgentAnalyticsPage } from './pages/AgentAnalyticsPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -52,6 +53,7 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route element={<ProtectedRoute />}>
               <Route path="/" element={<DashboardPage />} />
+              <Route path="/agent-analytics" element={<AgentAnalyticsPage />} />
               <Route path="/conversations" element={<ConversationsPage />} />
               <Route path="/channels" element={<ChannelsPage />} />
               <Route path="/knowledge" element={<KnowledgePage />} />

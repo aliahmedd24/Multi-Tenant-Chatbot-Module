@@ -8,17 +8,16 @@ import type {
     Channel,
     Conversation,
     KnowledgeDocument,
+    SentimentAnalytics,
+    ResponseTimeAnalytics,
+    ConversationAnalytics,
+    AgentInsights,
 } from '../types';
 
 // Auth API
 export const authApi = {
     login: async (email: string, password: string): Promise<AuthTokens> => {
-        const formData = new URLSearchParams();
-        formData.append('username', email);
-        formData.append('password', password);
-        const response = await api.post('/auth/login', formData, {
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        });
+        const response = await api.post('/auth/login', { email, password });
         return response.data;
     },
 
@@ -78,6 +77,37 @@ export const channelsApi = {
 
     delete: async (id: string): Promise<void> => {
         await api.delete(`/channels/${id}`);
+    },
+};
+
+// Agent Analytics API
+export const agentAnalyticsApi = {
+    getSentiment: async (periodDays = 30): Promise<SentimentAnalytics> => {
+        const response = await api.get('/analytics/agent/sentiment', {
+            params: { period_days: periodDays },
+        });
+        return response.data;
+    },
+
+    getResponseTime: async (periodDays = 30): Promise<ResponseTimeAnalytics> => {
+        const response = await api.get('/analytics/agent/response-time', {
+            params: { period_days: periodDays },
+        });
+        return response.data;
+    },
+
+    getConversations: async (periodDays = 30): Promise<ConversationAnalytics> => {
+        const response = await api.get('/analytics/agent/conversations', {
+            params: { period_days: periodDays },
+        });
+        return response.data;
+    },
+
+    getInsights: async (periodDays = 30): Promise<AgentInsights> => {
+        const response = await api.get('/analytics/agent/insights', {
+            params: { period_days: periodDays },
+        });
+        return response.data;
     },
 };
 

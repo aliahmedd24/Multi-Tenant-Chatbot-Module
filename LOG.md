@@ -2,6 +2,68 @@
 
 ---
 
+## Session 2026-02-11 - Agent Analytics Dashboard
+
+### Objective
+Add agent/chatbot-specific statistics visualization to the dashboard: sentiment analysis, intent classification, response time tracking, conversation length distribution, and AI-generated insights.
+
+### Work Completed
+- [x] Extended Message model with `sentiment`, `sentiment_score`, `intent`, `response_time_seconds` columns
+- [x] Created Alembic migration `003_agent_analytics.py`
+- [x] Created `services/sentiment_analyzer.py` using VADER (lightweight, English-focused MVP)
+- [x] Created `services/intent_classifier.py` with regex-based classification (6 categories)
+- [x] Integrated analysis into `workers/message_tasks.py` - auto-populates on inbound messages
+- [x] Added response time tracking on outbound messages
+- [x] Fixed hardcoded `avg_response_time_seconds = 1.5` in analytics overview - now queries real data
+- [x] Created `schemas/agent_analytics.py` - SentimentAnalytics, ResponseTimeAnalytics, ConversationAnalytics, AgentInsights
+- [x] Created `services/agent_analytics.py` - query functions + rule-based insight generation
+- [x] Created `api/v1/agent_analytics.py` - 4 endpoints under `/analytics/agent/`
+- [x] Frontend: 6 new visualization components (SentimentPieChart, ResponseTimeGauge, ResponseTimeTrendChart, ConversationLengthChart, InsightCard, SentimentTable)
+- [x] Frontend: AgentAnalyticsPage with period selector, stat cards, charts, insights panel
+- [x] Frontend: Sidebar navigation + App.tsx routing updated
+- [x] Added `agentAnalyticsApi` to frontend API service (4 methods)
+- [x] 29 new tests (6 sentiment, 10 intent, 13 API) - all passing
+- [x] Full suite: 143 tests passing, no regressions
+
+### New Dependencies
+- `vaderSentiment>=3.3.2` (pure Python, no new frontend deps)
+
+### Files Created
+- `backend/alembic/versions/003_agent_analytics.py`
+- `backend/app/services/sentiment_analyzer.py`
+- `backend/app/services/intent_classifier.py`
+- `backend/app/services/agent_analytics.py`
+- `backend/app/schemas/agent_analytics.py`
+- `backend/app/api/v1/agent_analytics.py`
+- `backend/tests/test_sentiment_analyzer.py`
+- `backend/tests/test_intent_classifier.py`
+- `backend/tests/test_agent_analytics_api.py`
+- `dashboard/src/components/SentimentPieChart.tsx`
+- `dashboard/src/components/ResponseTimeGauge.tsx`
+- `dashboard/src/components/ResponseTimeTrendChart.tsx`
+- `dashboard/src/components/ConversationLengthChart.tsx`
+- `dashboard/src/components/InsightCard.tsx`
+- `dashboard/src/components/SentimentTable.tsx`
+- `dashboard/src/pages/AgentAnalyticsPage.tsx`
+
+### Files Modified
+- `backend/app/models/message.py` - 4 new columns + index
+- `backend/app/workers/message_tasks.py` - sentiment/intent analysis + response time
+- `backend/app/api/v1/analytics.py` - real response time query
+- `backend/app/api/v1/router.py` - registered agent_analytics router
+- `backend/requirements.txt` - added vaderSentiment
+- `dashboard/src/types/index.ts` - agent analytics interfaces
+- `dashboard/src/api/index.ts` - agentAnalyticsApi service
+- `dashboard/src/components/Sidebar.tsx` - Agent Analytics nav item
+- `dashboard/src/App.tsx` - /agent-analytics route
+
+### Next Steps
+- Run `npm install` in dashboard/ and visually test
+- Consider multilingual sentiment model for Arabic support
+- Add backfill script for existing messages (currently NULL sentiment/intent)
+
+---
+
 ## Session 2026-02-09 20:42 - Phase 4: Analytics & Admin Dashboard
 
 ### Objective

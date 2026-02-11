@@ -2,7 +2,7 @@
 
 from enum import Enum
 
-from sqlalchemy import Column, ForeignKey, String, Text
+from sqlalchemy import Column, Float, ForeignKey, Index, String, Text
 from sqlalchemy.orm import relationship
 
 from app.database import Base
@@ -57,8 +57,18 @@ class Message(Base, TenantModel):
     # Metadata (platform-specific data as JSON string)
     metadata_ = Column("metadata", Text, nullable=True)
 
+    # Agent analytics fields
+    sentiment = Column(String(20), nullable=True)  # positive, negative, neutral
+    sentiment_score = Column(Float, nullable=True)  # -1.0 to 1.0
+    intent = Column(String(50), nullable=True)  # greeting, question, complaint, etc.
+    response_time_seconds = Column(Float, nullable=True)  # outbound messages only
+
     # Relationships
     conversation = relationship("Conversation", back_populates="messages")
+
+    __table_args__ = (
+        Index("ix_messages_sentiment", "sentiment"),
+    )
 
     def __repr__(self) -> str:
         return f"<Message {self.direction} ({self.status})>"

@@ -13,7 +13,9 @@ from app.database import SessionLocal
 from app.models.channel import Channel
 from app.models.conversation import Conversation
 from app.models.message import Message, MessageDirection, MessageStatus
+from app.services.intent_classifier import classify_intent
 from app.services.rag_engine import RAGEngine
+from app.services.sentiment_analyzer import analyze_sentiment
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +61,12 @@ def process_inbound_message(self, message_id: str):
         if not channel:
             logger.error(f"Channel not found for conversation: {conversation.id}")
             return
+
+        # Analyze inbound message sentiment and intent
+        sentiment_result = analyze_sentiment(message.content)
+        message.sentiment = sentiment_result["sentiment"]
+        message.sentiment_score = sentiment_result["score"]
+        message.intent = classify_intent(message.content)
 
         # Generate RAG response
         tenant_id = str(message.tenant_id)
@@ -112,7 +120,8 @@ def process_inbound_message(self, message_id: str):
             status = MessageStatus.failed.value
             response_text = f"[Failed to send: {send_error}]"
 
-        # Create outbound message record
+        # Create outbound message record with response time
+        response_time = (datetime.utcnow() - message.created_at).total_seconds()
         outbound_message = Message(
             tenant_id=message.tenant_id,
             conversation_id=conversation.id,
@@ -120,6 +129,7 @@ def process_inbound_message(self, message_id: str):
             content=response_text,
             external_id=external_message_id,
             status=status,
+            response_time_seconds=response_time,
         )
         db.add(outbound_message)
 

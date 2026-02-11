@@ -74,8 +74,16 @@ def get_overview(
         or 0
     )
 
-    # Average response time (placeholder - would need timing data in production)
-    avg_response_time_seconds = 1.5
+    # Average response time from actual outbound message data
+    avg_rt = (
+        db.query(func.avg(Message.response_time_seconds))
+        .filter(
+            Message.tenant_id == tenant_id,
+            Message.response_time_seconds.isnot(None),
+        )
+        .scalar()
+    )
+    avg_response_time_seconds = round(avg_rt, 2) if avg_rt else 0.0
 
     return OverviewMetrics(
         total_conversations=total_conversations,

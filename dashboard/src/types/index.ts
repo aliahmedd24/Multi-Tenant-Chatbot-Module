@@ -99,3 +99,79 @@ export interface KnowledgeDocument {
     chunk_count: number;
     uploaded_at: string;
 }
+
+// Agent Analytics types
+
+export interface SentimentCount {
+    sentiment: string;
+    count: number;
+    percentage: number;
+}
+
+export interface SentimentTrendPoint {
+    date: string;
+    avg_score: number;
+    positive_count: number;
+    negative_count: number;
+    neutral_count: number;
+}
+
+export interface SentimentAnalytics {
+    period_days: number;
+    total_analyzed: number;
+    distribution: SentimentCount[];
+    overall_score: number;
+    overall_label: string;
+    daily_trend: SentimentTrendPoint[];
+    satisfaction_rating: string;
+}
+
+export interface ResponseTimeMetrics {
+    avg_response_time_seconds: number;
+    min_response_time_seconds?: number;
+    max_response_time_seconds?: number;
+    performance_rating: string;
+    target_seconds: number;
+    total_responses: number;
+}
+
+export interface ResponseTimeTrendPoint {
+    date: string;
+    avg_seconds: number;
+    count: number;
+}
+
+export interface ResponseTimeAnalytics {
+    period_days: number;
+    metrics: ResponseTimeMetrics;
+    daily_trend: ResponseTimeTrendPoint[];
+}
+
+export interface ConversationLengthBucket {
+    label: string;
+    count: number;
+    percentage: number;
+}
+
+export interface ConversationAnalytics {
+    period_days: number;
+    total_conversations: number;
+    avg_message_count: number;
+    resolved_count: number;
+    resolution_rate: number;
+    handoff_count: number;
+    handoff_rate: number;
+    length_distribution: ConversationLengthBucket[];
+}
+
+export interface InsightItem {
+    category: string;
+    severity: string;
+    title: string;
+    description: string;
+}
+
+export interface AgentInsights {
+    insights: InsightItem[];
+    generated_at: string;
+}
