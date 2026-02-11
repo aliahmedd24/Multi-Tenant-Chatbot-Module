@@ -70,7 +70,7 @@ def seed_tenants():
             db.flush()
 
             # Create owner admin for each tenant
-            email = f"admin@{tenant_data['slug']}.test"
+            email = f"admin@{tenant_data['slug']}.example.com"
             admin = User(
                 tenant_id=tenant.id,
                 email=email,

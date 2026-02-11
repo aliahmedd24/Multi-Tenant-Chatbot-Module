@@ -5,7 +5,6 @@ description: # Phase 0: Project Setup & Architecture | ## Objective Establish th
 ## Tech Stack
 - **Version Control**: Git + GitHub
 - **Container Platform**: Docker + Docker Compose
-- **Development OS**: Linux (Ubuntu 24 recommended) or macOS
 - **Python Version**: 3.11+
 - **Node Version**: 20 LTS (for dashboard)
 - **IDE**: VS Code (recommended) with extensions
