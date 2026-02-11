@@ -7,12 +7,15 @@ from app.config import get_settings
 
 settings = get_settings()
 
-engine = create_engine(
-    settings.database_url,
-    pool_size=settings.db_pool_size,
-    max_overflow=settings.db_max_overflow,
-    pool_pre_ping=True,
-)
+# SQLite doesn't support pool_size; use connect_args for SQLite
+_engine_kwargs = {"pool_pre_ping": True}
+if settings.database_url.startswith("sqlite"):
+    _engine_kwargs["connect_args"] = {"check_same_thread": False}
+else:
+    _engine_kwargs["pool_size"] = settings.db_pool_size
+    _engine_kwargs["max_overflow"] = settings.db_max_overflow
+
+engine = create_engine(settings.database_url, **_engine_kwargs)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

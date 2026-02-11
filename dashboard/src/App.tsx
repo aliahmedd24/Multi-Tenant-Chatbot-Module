@@ -6,6 +6,7 @@ import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { ChannelsPage } from './pages/ChannelsPage';
 import { KnowledgePage } from './pages/KnowledgePage';
+import { ChatPage } from './pages/ChatPage';
 import { ConversationsPage } from './pages/ConversationsPage';
 import { AgentAnalyticsPage } from './pages/AgentAnalyticsPage';
 
@@ -53,6 +54,7 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route element={<ProtectedRoute />}>
               <Route path="/" element={<DashboardPage />} />
+              <Route path="/chat" element={<ChatPage />} />
               <Route path="/agent-analytics" element={<AgentAnalyticsPage />} />
               <Route path="/conversations" element={<ConversationsPage />} />
               <Route path="/channels" element={<ChannelsPage />} />

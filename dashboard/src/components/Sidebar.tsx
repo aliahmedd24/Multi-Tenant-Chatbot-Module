@@ -2,6 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import {
     LayoutDashboard,
     Bot,
+    MessageCircle,
     MessageSquare,
     Radio,
     BookOpen,
@@ -15,6 +16,7 @@ import { clsx } from 'clsx';
 
 const navItems = [
     { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
+    { to: '/chat', icon: MessageCircle, label: 'Chat' },
     { to: '/agent-analytics', icon: Bot, label: 'Agent Analytics' },
     { to: '/conversations', icon: MessageSquare, label: 'Conversations' },
     { to: '/channels', icon: Radio, label: 'Channels' },

@@ -14,13 +14,13 @@ from app.services.llm_gateway import generate_response
 from app.services.vector_store import query_vectors
 
 
-RAG_SYSTEM_PROMPT = """You are a helpful AI assistant for a business. Answer the user's question based ONLY on the provided context.
+RAG_SYSTEM_PROMPT = """You are a helpful AI assistant. You must answer ONLY using the provided context from the knowledge base.
 
-Rules:
-1. Only use information from the provided context
-2. If the context doesn't contain enough information to answer, say so politely
-3. Be concise but complete in your answers
-4. Do not make up information not present in the context
+STRICT RULES:
+1. Answer ONLY from the context below. Do not use external knowledge or general knowledge.
+2. If the question cannot be answered from the context, or the context says "No relevant information found", respond with a short message that you can only answer questions based on the uploaded knowledge base, and suggest the user ask something related to the documents.
+3. Do not answer off-topic questions (e.g. general knowledge, other businesses, coding, news). Politely decline and say you only respond based on the knowledge base.
+4. Be concise. Do not make up or assume any information not in the context.
 
 Context:
 {context}
@@ -120,6 +120,14 @@ def build_rag_prompt(query: str, context_chunks: list[dict]) -> tuple[str, str]:
     return system_prompt, query
 
 
+# Default reply when no knowledge-base context is available (strict out-of-scope)
+OUT_OF_SCOPE_RESPONSE = (
+    "I can only answer questions based on the documents in the knowledge base. "
+    "Your question doesn't seem to be covered by the uploaded content. "
+    "Please ask something related to the documents that have been uploaded."
+)
+
+
 def rag_query(
     query: str,
     tenant_id: str | UUID,
@@ -139,6 +147,19 @@ def rag_query(
     """
     # Retrieve context
     context_chunks = retrieve_context(query, tenant_id, db, top_k)
+
+    # No relevant context: refuse to answer off-topic without calling the LLM
+    if not context_chunks:
+        return {
+            "response": OUT_OF_SCOPE_RESPONSE,
+            "sources": [],
+            "usage": {
+                "context_chunks": 0,
+                "prompt_tokens": None,
+                "completion_tokens": None,
+                "total_tokens": None,
+            },
+        }
 
     # Build prompt
     system_prompt, user_prompt = build_rag_prompt(query, context_chunks)

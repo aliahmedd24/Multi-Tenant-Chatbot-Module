@@ -94,10 +94,32 @@ export interface KnowledgeDocument {
     id: string;
     filename: string;
     file_type: string;
-    file_size: number;
+    file_size?: number;
+    file_size_bytes?: number;
     status: string;
     chunk_count: number;
     uploaded_at: string;
+    processing_error?: string | null;
+}
+
+export interface ChatSourceDocument {
+    document_id: string;
+    filename: string;
+    chunk_content: string;
+    relevance_score: number;
+}
+
+export interface ChatUsageMetrics {
+    context_chunks: number;
+    prompt_tokens?: number;
+    completion_tokens?: number;
+    total_tokens?: number;
+}
+
+export interface ChatResponse {
+    response: string;
+    sources: ChatSourceDocument[];
+    usage: ChatUsageMetrics;
 }
 
 // Agent Analytics types

@@ -8,6 +8,7 @@ import type {
     Channel,
     Conversation,
     KnowledgeDocument,
+    ChatResponse,
     SentimentAnalytics,
     ResponseTimeAnalytics,
     ConversationAnalytics,
@@ -111,23 +112,36 @@ export const agentAnalyticsApi = {
     },
 };
 
-// Knowledge API
+// Chat API (POST /chat - RAG-powered agent)
+export const chatApi = {
+    send: async (message: string): Promise<ChatResponse> => {
+        const response = await api.post<ChatResponse>('/chat', { message });
+        return response.data;
+    },
+};
+
+// Knowledge API (backend routes: GET/POST /knowledge/documents, DELETE /knowledge/documents/:id)
 export const knowledgeApi = {
     list: async (): Promise<{ documents: KnowledgeDocument[]; total: number }> => {
-        const response = await api.get('/knowledge');
+        const response = await api.get('/knowledge/documents');
         return response.data;
     },
 
     upload: async (file: File): Promise<KnowledgeDocument> => {
         const formData = new FormData();
         formData.append('file', file);
-        const response = await api.post('/knowledge/upload', formData, {
+        const response = await api.post('/knowledge/documents', formData, {
             headers: { 'Content-Type': 'multipart/form-data' },
         });
         return response.data;
     },
 
     delete: async (id: string): Promise<void> => {
-        await api.delete(`/knowledge/${id}`);
+        await api.delete(`/knowledge/documents/${id}`);
+    },
+
+    reprocess: async (id: string): Promise<KnowledgeDocument> => {
+        const response = await api.post(`/knowledge/documents/${id}/reprocess`);
+        return response.data;
     },
 };

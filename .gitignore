@@ -10,6 +10,7 @@ build/
 .eggs/
 .venv/
 venv/
+wafaa/
 ENV/
 
 # Node
@@ -45,6 +46,8 @@ coverage.xml
 
 # Uploads
 /data/uploads/
+uploads/
+backend/uploads/
 
 # Logs
 *.log
@@ -54,3 +57,7 @@ backend/alembic/versions/__pycache__/
 
 # Build artifacts
 dashboard/dist/
+
+# Local DB (SQLite)
+*.db
+wafaa_dev.db

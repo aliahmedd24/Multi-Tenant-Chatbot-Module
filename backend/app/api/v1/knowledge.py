@@ -93,15 +93,32 @@ async def upload_document(
         details={"filename": file.filename, "file_size": file_size},
     )
 
-    # Queue for processing (Celery task)
-    # Import here to avoid circular imports
+    # Queue for processing (Celery task), or process synchronously if Celery unavailable
     try:
         from app.workers.document_tasks import process_document_task
 
         process_document_task.delay(str(doc_id), str(current_user.tenant_id))
+        message = "Document uploaded and queued for processing"
     except Exception:
-        # If Celery is not running, process synchronously (for testing)
-        pass
+        # Celery/Redis not running: run same task synchronously so documents are usable
+        try:
+            from app.workers.document_tasks import process_document_task
+
+            process_document_task.apply(args=(str(doc_id), str(current_user.tenant_id)))
+        except Exception as sync_err:
+            try:
+                from app.workers.document_tasks import process_document_sync
+
+                process_document_sync(str(doc_id), str(current_user.tenant_id))
+            except Exception as e:
+                db.refresh(document)
+                err_msg = getattr(document, "processing_error", None) or str(e)
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"Document processing failed: {err_msg[:300]}",
+                ) from e
+        db.refresh(document)
+        message = "Document uploaded and processed"
 
     return DocumentUploadResponse(
         id=doc_id,
@@ -109,7 +126,7 @@ async def upload_document(
         file_type=document.file_type,
         file_size_bytes=file_size,
         status=document.status,
-        message="Document uploaded and queued for processing",
+        message=message,
     )
 
 
@@ -161,6 +178,69 @@ def get_document(
     if not document:
         raise HTTPException(status_code=404, detail="Document not found")
 
+    return DocumentResponse.model_validate(document)
+
+
+@router.post("/documents/{document_id}/reprocess", response_model=DocumentResponse)
+def reprocess_document(
+    document_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Re-run processing for a document (e.g. stuck in processing or previously failed)."""
+    document = (
+        db.query(KnowledgeDocument)
+        .filter(
+            KnowledgeDocument.id == document_id,
+            KnowledgeDocument.tenant_id == current_user.tenant_id,
+        )
+        .first()
+    )
+
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    if not document.file_path:
+        raise HTTPException(status_code=400, detail="Document has no file path")
+
+    # Remove existing chunks and vectors so we don't duplicate
+    try:
+        delete_vectors_by_document(str(document_id), str(current_user.tenant_id))
+    except Exception:
+        pass
+    db.query(KnowledgeChunk).filter(
+        KnowledgeChunk.document_id == document_id,
+        KnowledgeChunk.tenant_id == current_user.tenant_id,
+    ).delete()
+    document.status = DocumentStatus.processing
+    document.processing_error = None
+    document.chunk_count = 0
+    document.processed_at = None
+    db.commit()
+    db.refresh(document)
+
+    try:
+        from app.workers.document_tasks import process_document_task
+
+        process_document_task.delay(str(document_id), str(current_user.tenant_id))
+    except Exception:
+        try:
+            from app.workers.document_tasks import process_document_task
+
+            process_document_task.apply(args=(str(document_id), str(current_user.tenant_id)))
+        except Exception as e:
+            try:
+                from app.workers.document_tasks import process_document_sync
+
+                process_document_sync(str(document_id), str(current_user.tenant_id))
+            except Exception as sync_e:
+                db.refresh(document)
+                err_msg = getattr(document, "processing_error", None) or str(sync_e)
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"Reprocessing failed: {err_msg[:300]}",
+                ) from sync_e
+    db.refresh(document)
     return DocumentResponse.model_validate(document)
 
 

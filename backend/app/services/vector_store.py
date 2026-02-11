@@ -18,12 +18,29 @@ def _cosine_similarity(a: list[float], b: list[float]) -> float:
     return dot / (mag_a * mag_b)
 
 
+def _check_pinecone_embedding_compat() -> None:
+    """Raise a clear error if using Pinecone with mock embeddings (dimension mismatch)."""
+    from app.services.embeddings import MOCK_EMBEDDING_DIM
+
+    settings = get_settings()
+    if settings.vector_db_provider != "pinecone":
+        return
+    if settings.embedding_provider == "mock":
+        raise ValueError(
+            "Pinecone requires real embeddings (1536 dim). Set EMBEDDING_PROVIDER=openai in .env. "
+            f"Mock embeddings use {MOCK_EMBEDDING_DIM} dimensions; your index expects 1536."
+        )
+
+
 def upsert_vectors(vectors: list[dict], tenant_id: str) -> None:
     """Store vectors with metadata.
 
     Each vector dict must have: id, values, metadata.
     """
     settings = get_settings()
+
+    if settings.vector_db_provider == "pinecone":
+        _check_pinecone_embedding_compat()
 
     if settings.vector_db_provider == "mock":
         for v in vectors:
@@ -56,6 +73,9 @@ def query_vectors(
     Returns list of dicts with: id, score, metadata.
     """
     settings = get_settings()
+
+    if settings.vector_db_provider == "pinecone":
+        _check_pinecone_embedding_compat()
 
     if settings.vector_db_provider == "mock":
         scored = []

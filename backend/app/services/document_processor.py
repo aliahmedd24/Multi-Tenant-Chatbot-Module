@@ -72,15 +72,37 @@ def _extract_pdf(path: Path) -> str:
 
 
 def _extract_docx(path: Path) -> str:
-    """Extract text from DOCX using python-docx."""
+    """Extract text from DOCX using python-docx (paragraphs and tables)."""
+    if not path.exists():
+        raise FileNotFoundError(f"Document file not found: {path}")
+
     try:
         from docx import Document
     except ImportError:
-        raise ImportError("python-docx is required for DOCX extraction. Install with: pip install python-docx")
+        raise ImportError(
+            "python-docx is required for DOCX extraction. Install with: pip install python-docx"
+        )
 
-    doc = Document(path)
+    try:
+        doc = Document(str(path))
+    except Exception as e:
+        raise ValueError(f"Cannot open DOCX (corrupted or invalid format): {e}") from e
+
     text_parts = []
+
     for para in doc.paragraphs:
         if para.text.strip():
             text_parts.append(para.text)
-    return "\n\n".join(text_parts)
+
+    for table in doc.tables:
+        for row in table.rows:
+            row_text = " | ".join(cell.text.strip() for cell in row.cells if cell.text.strip())
+            if row_text:
+                text_parts.append(row_text)
+
+    result = "\n\n".join(text_parts)
+    if not result.strip():
+        raise ValueError(
+            "No text could be extracted from the DOCX (document may contain only images or be empty)."
+        )
+    return result

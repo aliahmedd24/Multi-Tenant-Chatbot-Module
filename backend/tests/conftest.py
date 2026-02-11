@@ -1,6 +1,12 @@
 """Shared test fixtures for the Wafaa backend test suite."""
 
+import os
 import uuid
+
+# Force mock vector store and LLM/embedding so tests don't call Pinecone/OpenAI
+os.environ["VECTOR_DB_PROVIDER"] = "mock"
+os.environ["LLM_PROVIDER"] = "mock"
+os.environ["EMBEDDING_PROVIDER"] = "mock"
 
 import pytest
 from fastapi.testclient import TestClient

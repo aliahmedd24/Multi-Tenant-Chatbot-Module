@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Upload, Trash2, FileText, Loader2 } from 'lucide-react';
+import { Upload, Trash2, FileText, Loader2, RefreshCw } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { knowledgeApi } from '../api';
 
@@ -18,6 +18,11 @@ export function KnowledgePage() {
         onSuccess: () => queryClient.invalidateQueries({ queryKey: ['knowledge'] }),
     });
 
+    const reprocessMutation = useMutation({
+        mutationFn: knowledgeApi.reprocess,
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['knowledge'] }),
+    });
+
     const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -26,8 +31,12 @@ export function KnowledgePage() {
         try {
             await knowledgeApi.upload(file);
             queryClient.invalidateQueries({ queryKey: ['knowledge'] });
-        } catch (error) {
-            alert('Upload failed. Please try again.');
+        } catch (error: unknown) {
+            const msg =
+                error && typeof error === 'object' && 'response' in error
+                    ? (error as { response?: { data?: { detail?: string } } }).response?.data?.detail
+                    : null;
+            alert(msg ? `Upload failed: ${typeof msg === 'string' ? msg : JSON.stringify(msg)}` : 'Upload failed. Please try again.');
         } finally {
             setIsUploading(false);
             if (fileInputRef.current) {
@@ -104,23 +113,44 @@ export function KnowledgePage() {
                                 </td>
                                 <td className="py-4 px-6 text-slate-600">{doc.file_type}</td>
                                 <td className="py-4 px-6 text-right text-slate-600">
-                                    {(doc.file_size / 1024).toFixed(1)} KB
+                                    {((doc.file_size_bytes ?? doc.file_size ?? 0) / 1024).toFixed(1)} KB
                                 </td>
                                 <td className="py-4 px-6 text-right text-slate-600">{doc.chunk_count}</td>
                                 <td className="py-4 px-6">
-                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${doc.status === 'processed'
-                                            ? 'bg-emerald-100 text-emerald-800'
-                                            : doc.status === 'processing'
-                                                ? 'bg-amber-100 text-amber-800'
-                                                : 'bg-slate-100 text-slate-800'
+                                    <div className="flex flex-col gap-0.5">
+                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium w-fit ${doc.status === 'ready'
+                                                ? 'bg-emerald-100 text-emerald-800'
+                                                : doc.status === 'processing'
+                                                    ? 'bg-amber-100 text-amber-800'
+                                                    : doc.status === 'failed'
+                                                        ? 'bg-red-100 text-red-800'
+                                                        : 'bg-slate-100 text-slate-800'
                                         }`}>
-                                        {doc.status}
-                                    </span>
+                                            {doc.status}
+                                        </span>
+                                        {doc.status === 'failed' && doc.processing_error && (
+                                            <span className="text-xs text-red-600 max-w-xs truncate" title={doc.processing_error}>
+                                                {doc.processing_error}
+                                            </span>
+                                        )}
+                                    </div>
                                 </td>
                                 <td className="py-4 px-6 text-slate-500 text-sm">
                                     {new Date(doc.uploaded_at).toLocaleDateString()}
                                 </td>
-                                <td className="py-4 px-6">
+                                <td className="py-4 px-6 flex items-center gap-1">
+                                    {(doc.status === 'processing' || doc.status === 'failed') && (
+                                        <button
+                                            onClick={() => {
+                                                reprocessMutation.mutate(doc.id);
+                                            }}
+                                            disabled={reprocessMutation.isPending}
+                                            className="p-2 text-slate-400 hover:text-violet-600 hover:bg-violet-50 rounded-lg transition-colors disabled:opacity-50"
+                                            title="Reprocess document"
+                                        >
+                                            <RefreshCw size={18} className={reprocessMutation.isPending ? 'animate-spin' : ''} />
+                                        </button>
+                                    )}
                                     <button
                                         onClick={() => {
                                             if (confirm('Delete this document? This cannot be undone.')) {

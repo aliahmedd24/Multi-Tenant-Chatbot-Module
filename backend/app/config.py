@@ -34,8 +34,8 @@ class Settings(BaseSettings):
     # CORS
     cors_origins: List[str] = ["http://localhost:5173"]
 
-    # File Storage
-    upload_dir: str = "/data/uploads"
+    # File Storage (use "uploads" for local dev so backend/uploads is used; set UPLOAD_DIR for production)
+    upload_dir: str = "uploads"
     max_file_size_mb: int = 10
     allowed_file_types: str = "pdf,docx,txt,csv"
 
@@ -66,7 +66,7 @@ class Settings(BaseSettings):
     whatsapp_api_version: str = "v18.0"
     instagram_api_version: str = "v18.0"
 
-    model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+    model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
 
 
 @lru_cache
